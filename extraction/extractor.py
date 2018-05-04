@@ -121,10 +121,6 @@ class ExtractionContext(object):
         with open(path) as f:
             yield from gen(reader(f))
 
-    def process_files(self, gen, reader, paths):
-        process_file = partial(self.process_file, gen, reader)
-        return (ent for p in paths for ent in process_file(p) if ent)
-
     def process_provider(self, gen, reader, provider):
         for ent in self.process_file(gen, reader, provider.path):
             if ent:
