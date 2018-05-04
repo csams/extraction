@@ -80,18 +80,7 @@ class RecordGenerator(object):
             yield self.enhance(content)
 
 
-class SosRecordGenerator(RecordGenerator):
-    def __init__(self, it, **kwargs):
-        super(SosRecordGenerator, self).__init__(it)
-        self.dct = kwargs
-
-    def enhance(self, data):
-        dct = self.dct.copy()
-        dct["content"] = data
-        return dct
-
-
-class LargeRecordGenerator(SosRecordGenerator):
+class LargeRecordGenerator(RecordGenerator):
     def __init__(self, *args, **kwargs):
         super(LargeRecordGenerator, self).__init__(*args, **kwargs)
         self.index = 0
@@ -107,13 +96,6 @@ class ExtractionContext(object):
     def __init__(self, **kwargs):
         self.kwargs = kwargs
 
-    def get_generator(self, large=False):
-        Generator = LargeRecordGenerator if large else SosRecordGenerator
-        return partial(Generator, **self.kwargs)
-
-    def get_reader(self, large=False):
-        return line_reader if large else file_reader
-
     def process_file(self, gen, reader, path):
         # delay the open so we just have a stack of generators and no open
         # file handles until we start reading the stream
@@ -128,8 +110,8 @@ class ExtractionContext(object):
                 yield ent
 
     def process_providers(self, files, large=False):
-        Gen = self.get_generator(large)
-        reader = self.get_reader(large)
+        Gen = LargeRecordGenerator if large else RecordGenerator
+        reader = line_reader if large else file_reader
         process_provider = partial(self.process_provider, Gen, reader)
         return (ent for provider in files for ent in process_provider(provider))
 
@@ -138,6 +120,11 @@ class ExtractionContext(object):
         for ent in self.process_providers(providers, is_large(name)):
             ent["target"] = dr.get_simple_name(spec)
             yield ent
+
+    def add_context_meta(self, data):
+        for d in data:
+            d.update(self.kwargs)
+            yield d
 
     def process_dir(self, path):
         broker = create_broker(path)
@@ -155,7 +142,7 @@ class ExtractionContext(object):
             providers = broker[d]
             if not isinstance(providers, list):
                 providers = [providers]
-            stream = add_meta(self.process_spec(d, providers))
+            stream = add_meta(self.add_context_meta(self.process_spec(d, providers)))
             yield (d, stream)
 
     def process(self, path):
