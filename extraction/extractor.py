@@ -119,8 +119,7 @@ class ExtractionContext(object):
         # file handles until we start reading the stream
         yield None
         with open(path) as f:
-            for l in gen(reader(f)):
-                yield l
+            yield from gen(reader(f))
 
     def process_files(self, gen, reader, paths):
         process_file = partial(self.process_file, gen, reader)
@@ -144,22 +143,25 @@ class ExtractionContext(object):
             ent["target"] = dr.get_simple_name(spec)
             yield ent
 
+    def process_dir(self, path):
+        broker = create_broker(path)
+        broker = dr.run(broker=broker)
+
+        hn = get_hostname(broker)
+        version = get_version(broker)
+        uname = get_uname(broker)
+        release = get_release(broker)
+
+        add_meta = partial(add_host_meta, hn, version, uname, release)
+
+        datasources = all_datasources & set(broker.instances)
+        for d in datasources:
+            providers = broker[d]
+            if not isinstance(providers, list):
+                providers = [providers]
+            stream = add_meta(self.process_spec(d, providers))
+            yield (d, stream)
+
     def process(self, path):
         with extract(path) as ext:
-            broker = create_broker(ext.tmp_dir)
-            broker = dr.run(broker=broker)
-
-            hn = get_hostname(broker)
-            version = get_version(broker)
-            uname = get_uname(broker)
-            release = get_release(broker)
-
-            add_meta = partial(add_host_meta, hn, version, uname, release)
-
-            datasources = all_datasources & set(broker.instances)
-            for d in datasources:
-                providers = broker[d]
-                if not isinstance(providers, list):
-                    providers = [providers]
-                stream = add_meta(self.process_spec(d, providers))
-                yield (d, stream)
+            yield from self.process_dir(ext.tmp_dir)
