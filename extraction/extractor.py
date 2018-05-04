@@ -97,17 +97,13 @@ class ExtractionContext(object):
         self.kwargs = kwargs
 
     def process_file(self, gen, reader, path):
-        # delay the open so we just have a stack of generators and no open
-        # file handles until we start reading the stream
-        yield None
         with open(path) as f:
             yield from gen(reader(f))
 
     def process_provider(self, gen, reader, provider):
         for ent in self.process_file(gen, reader, provider.path):
-            if ent:
-                ent["path"] = provider.relative_path
-                yield ent
+            ent["path"] = provider.relative_path
+            yield ent
 
     def process_providers(self, files, large=False):
         Gen = LargeRecordGenerator if large else RecordGenerator
