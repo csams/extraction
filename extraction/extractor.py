@@ -34,10 +34,16 @@ def get_release(broker):
     return [-1, -1]
 
 
-def add_host_meta(hn, rel, data):
+def get_uname(broker):
+    if Specs.uname in broker:
+        return broker[Specs.uname].content[0]
+
+
+def add_host_meta(hn, rel, uname, data):
     for d in data:
         d["hostname"] = hn
         d["release"] = rel
+        d["uname"] = uname
         yield d
 
 
@@ -139,7 +145,9 @@ class ExtractionContext(object):
 
             hn = get_hostname(broker)
             release = get_release(broker)
-            add_meta = partial(add_host_meta, hn, release)
+            uname = get_uname(broker)
+
+            add_meta = partial(add_host_meta, hn, release, uname)
 
             datasources = all_datasources & set(broker.instances)
             for d in datasources:
