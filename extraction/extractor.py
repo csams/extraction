@@ -28,10 +28,15 @@ def get_hostname(broker):
 
 
 def get_release(broker):
+    if Specs.redhat_release in broker:
+        return broker[Specs.redhat_release].content[0]
+
+
+def get_version(broker):
     rel = broker.get(redhat_release)
     if rel:
-        return [rel.major, rel.minor]
-    return [-1, -1]
+        return [str(rel.major), str(rel.minor)]
+    return ["-1", "-1"]
 
 
 def get_uname(broker):
@@ -39,11 +44,12 @@ def get_uname(broker):
         return broker[Specs.uname].content[0]
 
 
-def add_host_meta(hn, rel, uname, data):
+def add_host_meta(hn, version, uname, release, data):
     for d in data:
-        d["hostname"] = hn
-        d["release"] = rel
-        d["uname"] = uname
+        d["hostname"] = hn or ""
+        d["version"] = version
+        d["uname"] = uname or ""
+        d["release"] = release or ""
         yield d
 
 
@@ -144,10 +150,11 @@ class ExtractionContext(object):
             broker = dr.run(broker=broker)
 
             hn = get_hostname(broker)
-            release = get_release(broker)
+            version = get_version(broker)
             uname = get_uname(broker)
+            release = get_release(broker)
 
-            add_meta = partial(add_host_meta, hn, release, uname)
+            add_meta = partial(add_host_meta, hn, version, uname, release)
 
             datasources = all_datasources & set(broker.instances)
             for d in datasources:
