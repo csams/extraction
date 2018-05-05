@@ -11,6 +11,7 @@ from insights.specs import Specs
 from extraction.specs import is_large
 
 dr.load_components("insights.specs.default")
+dr.load_components("insights.specs.insights_archive")
 dr.load_components("insights.specs.sos_archive")
 
 
@@ -131,14 +132,14 @@ class ExtractionContext(object):
         uname = get_uname(broker)
         release = get_release(broker)
 
-        add_meta = partial(add_host_meta, hn, version, uname, release)
+        host_meta = partial(add_host_meta, hn, version, uname, release)
 
         datasources = all_datasources & set(broker.instances)
         for d in datasources:
             providers = broker[d]
             if not isinstance(providers, list):
                 providers = [providers]
-            stream = add_meta(self.add_context_meta(self.process_spec(d, providers)))
+            stream = host_meta(self.add_context_meta(self.process_spec(d, providers)))
             yield (d, stream)
 
     def process(self, path):

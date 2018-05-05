@@ -54,7 +54,10 @@ class File(object):
                     us.write(chunk)
         return self
 
+    def sha256(self):
+        return sha256(self.path)
+
     def __eq__(self, other):
         if self is other:
             return True
-        return sha256(self.path) == sha256(other.path)
+        return self.sha256() == other.sha256()
