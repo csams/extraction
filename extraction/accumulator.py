@@ -124,16 +124,17 @@ class Accumulator(object):
         self.writers = KeyPassingDefaultDict(make_writer)
         self.writers.update(create_writers())
 
-    def _handle_stream(self, k, stream):
-        name = dr.get_simple_name(k)
+    def _handle_stream(self, name, stream):
         writer = self.writers[name]
         writer.write_stream(stream)
         writer.close()
         return writer
 
     def process(self, ctx, archive):
-        for k, stream in ctx.process(archive):
-            self._handle_stream(k, stream)
+        for name, path, stack in ctx.process(archive):
+            with open(path) as f:
+                stream = stack(f)
+                self._handle_stream(name, stream)
 
     def __iadd__(self, other):
         for k, them in other.writers.items():
