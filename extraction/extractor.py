@@ -17,8 +17,7 @@ def compose(*args):
 
 def liftI(f):
     def inner(x):
-        for i in x:
-            yield f(i)
+        return (f(i) for i in x)
     return inner
 
 
@@ -111,11 +110,11 @@ class ExtractionContext(object):
 
             for p in providers:
                 file_meta = meta(path=p.path, target=name)
-                stack = compose(archive_meta, file_meta)
+                transformer = compose(archive_meta, file_meta)
                 if large:
-                    stack = compose(stack, make_counter())
-                stack = compose(stack, to_dict)
-                yield (name, p.path, compose(liftI(stack), reader))
+                    transformer = compose(transformer, make_counter())
+                stream_transformer = liftI(compose(transformer, to_dict))
+                yield (name, p.path, compose(stream_transformer, reader))
 
     def process(self, path):
         with extract(path) as ext:
