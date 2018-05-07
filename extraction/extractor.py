@@ -73,13 +73,13 @@ def create_broker(path):
     return broker
 
 
-def get_datasources():
+def get_datasources(broker):
     all_datasources = set()
     for n in dir(Specs):
         a = getattr(Specs, n)
         if is_datasource(a):
             all_datasources.add(a)
-    return all_datasources
+    return all_datasources & set(broker.instances)
 
 
 class ExtractionContext(object):
@@ -96,7 +96,7 @@ class ExtractionContext(object):
                             version=get_version(broker),
                             **self.kwargs)
 
-        datasources = get_datasources() & set(broker.instances)
+        datasources = get_datasources(broker)
         for d in datasources:
             name = dr.get_simple_name(d)
             large = is_large(name)
