@@ -16,9 +16,7 @@ def compose(*args):
 
 
 def liftI(f):
-    def inner(x):
-        return (f(i) for i in x)
-    return inner
+    return lambda x: (f(i) for i in x)
 
 
 def to_dict(line):
