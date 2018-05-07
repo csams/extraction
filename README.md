@@ -8,6 +8,9 @@ Requires insights-core 3 and python 3, preferrably 3.6+
 
 ~~~
 from extraction import *
+from insights import dr
+
+dr.load_components("insights.specs")
 
 ext = ExtractionContext(accountnumber="1234",
                         case_number="9876",
@@ -18,7 +21,7 @@ acc = Accumulator("/tmp/my_data", small_max=20*MB, large_max=2*GB)
 acc.process(ext, "/path/to/sosreport.tar.gz")
 ~~~
 
-If files already exist in the directory, the Accumulator picks up where the
+If files already exist in the directory, the accumulator picks up where the
 previous one left off.
 
 To combine multiple accumulators, do the following:
