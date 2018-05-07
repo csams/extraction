@@ -122,9 +122,9 @@ class Accumulator(object):
         return writer
 
     def process(self, ctx, archive):
-        for name, path, stack in ctx.process(archive):
+        for name, path, transform in ctx.process(archive):
             with open(path) as f:
-                stream = stack(f)
+                stream = transform(f)
                 self._handle_stream(name, stream)
 
     def __iadd__(self, other):

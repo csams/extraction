@@ -30,7 +30,7 @@ def meta(**kwargs):
     return inner
 
 
-def make_counter():
+def line_counter():
     c = [0]
 
     def inner(data):
@@ -108,11 +108,11 @@ class ExtractionContext(object):
 
             for p in providers:
                 file_meta = meta(path=p.path, target=name)
-                transformer = compose(archive_meta, file_meta)
+                transform = compose(archive_meta, file_meta, to_dict)
                 if large:
-                    transformer = compose(transformer, make_counter())
-                stream_transformer = liftI(compose(transformer, to_dict))
-                yield (name, p.path, compose(stream_transformer, reader))
+                    transform = compose(line_counter(), transform)
+                stream_transform = liftI(transform)
+                yield (name, p.path, compose(stream_transform, reader))
 
     def process(self, path):
         with extract(path) as ext:
