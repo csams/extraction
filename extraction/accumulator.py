@@ -21,48 +21,41 @@ class Writer(object):
         self.cur_file = None
 
         self.ext = ".json."
-        self.index = 0
 
-        path = self.make_file_path()
+        path = self.next_file_path()
         while os.path.exists(path):
             self.files.append(File(path))
-            self.index += 1
-            path = self.make_file_path()
+            path = self.next_file_path()
 
-        if self.index:
-            self.index -= 1
-
-        if not self.files:
+        if len(self.files) == 0:
             self.files.append(File(path))
 
-        if len(self.files[-1]) >= self.max_size:
-            self.next_file()
-
         self.cur_size = self.get_cur_size()
+        if self.cur_size >= self.max_size:
+            self.next_file()
 
     def get_cur_size(self):
         return len(self.files[-1])
 
-    def make_file_path(self):
-        idx = str(self.index).zfill(5)
+    def next_file_path(self):
+        idx = str(len(self.files)).zfill(5)
         return os.path.join(self.root, self.name + self.ext + idx)
 
     def next_file(self):
-        self.index += 1
-        path = self.make_file_path()
+        self.close()
+        self.cur_size = 0
+        path = self.next_file_path()
         self.files.append(File(path))
 
     def should_roll(self, data):
-        return self.cur_size >= self.max_size
+        return (self.cur_size + len(data["content"])) >= self.max_size
 
     def write_stream(self, stream):
-        self.cur_size = self.get_cur_size()
         for s in stream:
             self.write(s)
 
     def write(self, data):
         if self.should_roll(data):
-            self.close()
             self.next_file()
 
         if not self.cur_file:
@@ -72,10 +65,8 @@ class Writer(object):
 
     def close(self):
         if self.cur_file:
-            self.cur_file.flush()
             self.cur_file.close()
             self.cur_file = None
-            self.cur_size = 0
 
     def __iadd__(self, other):
         for f in other.files:
@@ -97,10 +88,10 @@ class Accumulator(object):
     def __init__(self, root, small_max=200 * MB, large_max=1 * GB):
 
         def make_writer(d):
-            n = dr.get_simple_name(d)
-            if is_large(n):
-                return LargeWriter(root, n, large_max)
-            return Writer(root, n, small_max)
+            name = dr.get_simple_name(d)
+            if is_large(name):
+                return LargeWriter(root, name, large_max)
+            return Writer(root, name, small_max)
 
         def create_writers():
             def partition():
